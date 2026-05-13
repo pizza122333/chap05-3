@@ -1,0 +1,54 @@
+#include <iostream>
+#include "opencv2/opencv.hpp"
+
+using namespace std;
+using namespace cv;
+
+// 꺾은선 형태의 히스토그램 그래프 생성 함수
+Mat mygetGrayHistImage(const Mat& hist)
+{
+    // 1. 흰색 바탕의 이미지 생성 (가로 256, 세로 200)
+    Mat imgHist(200, 256, CV_8UC1, Scalar(255));
+
+    // 2. 최대 빈도수를 찾아 정규화 기준 마련
+    double maxVal;
+    minMaxLoc(hist, nullptr, &maxVal);
+
+    // 3. 힌트 적용: i는 0부터 254까지 (다음 점 i+1을 참조해야 하므로)
+    for (int i = 0; i < 254; i++) {
+        // 현재 칸(i)의 높이와 다음 칸(i+1)의 높이 계산
+        int h1 = cvRound((hist.at<float>(i) * 200) / maxVal);
+        int h2 = cvRound((hist.at<float>(i + 1) * 200) / maxVal);
+
+        // 현재 좌표 (i, h1)와 다음 좌표 (i+1, h2)를 직선으로 연결
+        // 영상 좌표계는 좌상단이 (0,0)이므로 y값은 '200 - 높이'
+        line(imgHist, Point(i, 200 - h1), Point(i + 1, 200 - h2), Scalar(0), 1);
+    }
+
+    return imgHist;
+}
+
+int main()
+{
+    // 영상 불러오기 (그레이스케일)
+    Mat src = imread("lenna.bmp", IMREAD_GRAYSCALE);
+    if (src.empty()) return -1;
+
+    // 히스토그램 계산 (기본 calcHist 사용)
+    Mat hist;
+    int channels[] = { 0 };
+    int histSize[] = { 256 };
+    float range[] = { 0, 256 };
+    const float* ranges[] = { range };
+    calcHist(&src, 1, channels, noArray(), hist, 1, histSize, ranges);
+
+    // 과제 3 함수 호출
+    Mat histImg = mygetGrayHistImage(hist);
+
+    // 화면 출력
+    imshow("입력 영상", src);
+    imshow("srcHist (Line Graph)", histImg);
+
+    waitKey(0);
+    return 0;
+}
